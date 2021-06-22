@@ -19,19 +19,19 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class TestCaseView(viewsets.ModelViewSet):
+    """CRUD functionlity for individual test case"""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TestCaseSerializer
     queryset = TestCase.objects.all()
 
     def post(self, request, *args, **kwargs):
         """
-        post api request from the user endpoint
+        overriding create functionality for modelviewset
         :param request:
         :param args:
         :param kwargs:
         :return:
         """
-
         description = request.data['description']
         title = request.data['title']
 
@@ -84,6 +84,13 @@ class TestSuitesView(viewsets.ModelViewSet):
 
 
     def destroy(self, request, *args, **kwargs):
+        """
+        Overidding delete functionality of modelviewset
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
         slug = self.kwargs['slug']
         user = request.user
         testcase = get_object_or_404(TestCase, slug=slug)
@@ -108,6 +115,9 @@ class TestSuitesView(viewsets.ModelViewSet):
 
 
 class GetTestSuiteItem(viewsets.ModelViewSet):
+    """
+    Queryset for the retrieving individual test cases info
+    """
     serializer_class = TestSuiteItemSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = TestSuiteItem.objects.all()
