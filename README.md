@@ -41,17 +41,17 @@ test cases to test suite by providing api link.
         },
 
  ### Add test cases ###
-    POST --> http://127.0.0.1:8000/api/test_suite_cases/
+    POST --> http://127.0.0.1:8000/api/test_suite_cases/{pass your slug here itself}/
     data: 
         { slug:"this is your title of test case name" }
 
 ### Delete test cases from suite ###
-    DELETE --> http://127.0.0.1:8000/api/test_suite_cases/
+    DELETE --> http://127.0.0.1:8000/api/test_suite_cases/{pass your slug here itself}/
     data: 
         { slug:"this is your title of test case name" }
 
 ### EDIT test cases from suite ###
-    PUT --> http://127.0.0.1:8000/api/test_suite_cases/
+    PUT --> http://127.0.0.1:8000/api/test_suite_cases/{pass your slug here itself}/
     data: 
         { slug:"this is your title of test case name" }
 
