@@ -35,7 +35,6 @@ class TestCaseSerializer(serializers.ModelSerializer):
 
 class TestSuiteItemSerializer(serializers.ModelSerializer):
     """Serializer for the Test Suite Item model."""
-    # testcase = TestCaseSerializer(read_only=True)
 
     class Meta:
         model = TestSuiteItem
@@ -44,7 +43,6 @@ class TestSuiteItemSerializer(serializers.ModelSerializer):
 
 class TestSuitesSerializer(serializers.ModelSerializer):
     """ Serializer fo the test suite single test case """
-    user = UserSerializer(read_only=True)
 
     class Meta:
         model = TestSuites

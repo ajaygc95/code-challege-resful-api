@@ -10,6 +10,7 @@ Found in settings.py at root folder level
 
 class TestCase(models.Model):
     """ This model contains data for single test case"""
+
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=255)
     slug = models.SlugField(max_length=100, allow_unicode=True, blank=True)

@@ -1,6 +1,4 @@
-import json
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
 from rest_framework import viewsets, permissions
 from django.utils import timezone
 from .serializers import (
@@ -15,9 +13,16 @@ from .models import TestCase, TestSuites, TestSuiteItem
 from rest_framework.response import Response
 from django.shortcuts import render, get_object_or_404
 from rest_framework import mixins, viewsets
+from django.http import HttpResponse
+
+
+def home(request):
+    """ Home page renderer... """
+    return render(request,"rest_api/index.html")
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """Get User Detail """
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -42,12 +47,15 @@ class TestCaseView(viewsets.ModelViewSet):
         TestCase.objects.create(title=title, description=description)
         return Response({'message': "created"}, status=200)
 
+class TestSuiteItemView(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TestSuiteItemSerializer
+    queryset = TestSuiteItem.objects.all()
 
 class TestSuitesView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TestSuitesSerializer
     queryset = TestSuites.objects.all()
-    lookup_field = "pk"
 
     def update(self, request, *args, **kwargs):
         getPK = self.kwargs['pk']
@@ -55,11 +63,13 @@ class TestSuitesView(viewsets.ModelViewSet):
         user = request.user
 
         testcase = get_object_or_404(TestCase, slug=slug)
+        print(testcase)
         testcaseitem, created = TestSuiteItem.objects.get_or_create(
             testcase=testcase,
             user=request.user,
             added=False
         )
+        print(testcaseitem)
         test_suite_qs = TestSuites.objects.filter(pk=getPK)
         print(test_suite_qs)
 
@@ -110,13 +120,8 @@ class GetTestSuiteItem(viewsets.ModelViewSet):
             return Response({"message": "There is no such test suite or no items in the test suite"})
 
 
-class MergeTwoCases1(viewsets.ModelViewSet):
-    serializer_class = TestSuitesSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    queryset = TestSuites.objects.all()
-
-
 class MergeTwoCasesView(viewsets.ModelViewSet):
+    """Merge Two test cases View"""
     serializer_class = MergeTwoSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = TestSuites.objects.all()
@@ -127,8 +132,8 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
 
         requestdata = self.request.data
         dict1 = dict(requestdata)
-        slug1 = dict1['firstcase'][0]
-        slug2 = dict1['secondcase'][0]
+        slug1 = str(dict1['firstcase'][0]).lower()
+        slug2 = str(dict1['secondcase'][0]).lower()
 
         testcase1 = get_object_or_404(TestCase, slug=slug1)
         testcase2 = get_object_or_404(TestCase, slug=slug2)
@@ -139,10 +144,6 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
             testsuite = test_suite_qs[0]
             single_test_case = testsuite.testcases.all()
 
-            """<QuerySet [<TestSuiteItem: TestSuiteItem object (23)>,
-             <TestSuiteItem: TestSuiteItem object (25)>, 
-             <TestSuiteItem: TestSuiteItem object (26)>]>
-            """
             tests1_in_suite = False
             tests2_in_suite = False
 
@@ -150,16 +151,14 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
             context = {mergetitle:{}}
 
             for item in single_test_case:
-                print(item.testcase.title)
-                itemid = str(item.testcase.slug)
-
-                if itemid == "fdl":
+                itemid = str(item.testcase.slug).lower()
+                if itemid == slug1:
                     print(itemid, testcase1)
                     wrapper_context = {'id': item.testcase.id, 'title': item.testcase.title, 'slug': item.testcase.slug,
                                        'description': item.testcase.description}
                     context[mergetitle][item.testcase.slug] = wrapper_context
 
-                if itemid == "frontdoor":
+                if itemid == slug2:
                     print(itemid, testcase2)
                     wrapper_context = {'id': item.testcase.id, 'title': item.testcase.title, 'slug': item.testcase.slug,
                                        'description': item.testcase.description}
@@ -167,6 +166,3 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
             return Response(context)
         else:
             return Response({"message": "There is no such test suite or no items in the test suite"})
-
-def home(request):
-    return
