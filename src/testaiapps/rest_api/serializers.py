@@ -44,7 +44,19 @@ class TestSuiteItemSerializer(serializers.ModelSerializer):
 
 class TestSuitesSerializer(serializers.ModelSerializer):
     """ Serializer fo the test suite single test case """
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = TestSuites
         fields = '__all__'
+
+class MergeTwoSerializer(serializers.ModelSerializer):
+    def get_alternate_name(self, obj):
+        firstcase = self.context["firstcase"]
+        secondcase = self.context["secondcase"]
+
+    class Meta:
+        model = TestSuites
+        fields = "__all__"
+
+

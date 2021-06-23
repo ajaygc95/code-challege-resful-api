@@ -1,3 +1,5 @@
+import json
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, permissions
 from django.utils import timezone
@@ -5,6 +7,7 @@ from .serializers import (
     TestCaseSerializer,
     TestSuitesSerializer,
     TestSuiteItemSerializer,
+    MergeTwoSerializer,
     UserSerializer)
 from django.contrib.auth.models import User
 from rest_framework.generics import RetrieveAPIView
@@ -12,6 +15,7 @@ from .models import TestCase, TestSuites, TestSuiteItem
 from rest_framework.response import Response
 from django.shortcuts import render, get_object_or_404
 from rest_framework import mixins, viewsets
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -40,34 +44,25 @@ class TestCaseView(viewsets.ModelViewSet):
 
 
 class TestSuitesView(viewsets.ModelViewSet):
-    """
-    API endpoint that allows test Suite to be viewed or edited.
-    """
-
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TestSuitesSerializer
     queryset = TestSuites.objects.all()
-    lookup_field = 'slug'
+    lookup_field = "pk"
 
-    def post(self, request, *args, **kwargs):
-        """
-        create method overloaded for Test Suite List
-        :param request:
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        slug = self.kwargs['slug']
+    def update(self, request, *args, **kwargs):
+        getPK = self.kwargs['pk']
+        slug = request.data['testcases']
         user = request.user
+
         testcase = get_object_or_404(TestCase, slug=slug)
         testcaseitem, created = TestSuiteItem.objects.get_or_create(
             testcase=testcase,
-            user=user,
+            user=request.user,
             added=False
         )
-        test_suite_qs = TestSuites.objects.filter(
-            user=user,
-        )
+        test_suite_qs = TestSuites.objects.filter(pk=getPK)
+        print(test_suite_qs)
+
         if test_suite_qs.exists():
             testsuite = test_suite_qs[0]
 
@@ -83,41 +78,95 @@ class TestSuitesView(viewsets.ModelViewSet):
             return Response({'message': "Test case has been added to Test Suite"}, status=200)
 
 
-    def destroy(self, request, *args, **kwargs):
-        """
-        Overidding delete functionality of modelviewset
-        :param request:
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        slug = self.kwargs['slug']
-        user = request.user
-        testcase = get_object_or_404(TestCase, slug=slug)
-        test_suite_qs = TestSuites.objects.filter(
-            user=user,
-        )
-        if test_suite_qs.exists():
-            testsuite = test_suite_qs[0]
-            # check if the test case is in the test suite
-            if testsuite.testcases.filter(testcase__slug=testcase.slug).exists():
-                testcaseitem = TestSuiteItem.objects.filter(
-                    testcase = testcase,
-                    user = user,
-                    added = False
-                )[0]
-                testsuite.testcases.remove(testcaseitem)
-                return Response({'message': "Test case has been removed from the test suite"}, status=200)
-            else:
-                return Response({'message': "There is no test case in the suite with that name"}, status=200)
-        else:
-            return Response({'message': "There is no active Test Suite"}, status=200)
-
-
 class GetTestSuiteItem(viewsets.ModelViewSet):
     """
     Queryset for the retrieving individual test cases info
     """
-    serializer_class = TestSuiteItemSerializer
+    serializer_class = TestSuitesSerializer
     permission_classes = [permissions.IsAuthenticated]
-    queryset = TestSuiteItem.objects.all()
+    queryset = TestSuites.objects.all()
+
+    # queryset = None
+
+    def retrieve(self, request, *args, **kwargs):
+        get_pk = self.kwargs['pk']
+        test_suite_qs = TestSuites.objects.filter(pk=get_pk)
+
+        if test_suite_qs.exists():
+            testsuite = test_suite_qs[0]
+            single_test_case = testsuite.testcases.all()
+
+            context = {}
+            for item in single_test_case:
+                wrapper_context = {}
+                wrapper_context['id'] = item.testcase.id
+                wrapper_context['title'] = item.testcase.title
+                wrapper_context['slug'] = item.testcase.slug
+                wrapper_context['description'] = item.testcase.description
+
+                context[item.testcase.slug] = wrapper_context
+            return Response(context)
+        else:
+            return Response({"message": "There is no such test suite or no items in the test suite"})
+
+
+class MergeTwoCases1(viewsets.ModelViewSet):
+    serializer_class = TestSuitesSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TestSuites.objects.all()
+
+
+class MergeTwoCasesView(viewsets.ModelViewSet):
+    serializer_class = MergeTwoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = TestSuites.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        print(self.request.data)
+        get_pk = self.kwargs['pk']
+
+        requestdata = self.request.data
+        dict1 = dict(requestdata)
+        slug1 = dict1['firstcase'][0]
+        slug2 = dict1['secondcase'][0]
+
+        testcase1 = get_object_or_404(TestCase, slug=slug1)
+        testcase2 = get_object_or_404(TestCase, slug=slug2)
+
+
+        test_suite_qs = TestSuites.objects.filter(pk=get_pk)
+        if test_suite_qs.exists():
+            testsuite = test_suite_qs[0]
+            single_test_case = testsuite.testcases.all()
+
+            """<QuerySet [<TestSuiteItem: TestSuiteItem object (23)>,
+             <TestSuiteItem: TestSuiteItem object (25)>, 
+             <TestSuiteItem: TestSuiteItem object (26)>]>
+            """
+            tests1_in_suite = False
+            tests2_in_suite = False
+
+            mergetitle = f"{testcase1}{testcase2}"
+            context = {mergetitle:{}}
+
+            for item in single_test_case:
+                print(item.testcase.title)
+                itemid = str(item.testcase.slug)
+
+                if itemid == "fdl":
+                    print(itemid, testcase1)
+                    wrapper_context = {'id': item.testcase.id, 'title': item.testcase.title, 'slug': item.testcase.slug,
+                                       'description': item.testcase.description}
+                    context[mergetitle][item.testcase.slug] = wrapper_context
+
+                if itemid == "frontdoor":
+                    print(itemid, testcase2)
+                    wrapper_context = {'id': item.testcase.id, 'title': item.testcase.title, 'slug': item.testcase.slug,
+                                       'description': item.testcase.description}
+                    context[mergetitle][item.testcase.slug] = wrapper_context
+            return Response(context)
+        else:
+            return Response({"message": "There is no such test suite or no items in the test suite"})
+
+def home(request):
+    return
