@@ -2,6 +2,6 @@ version: "3.8"
 services:
   web:
     build: .
-    command: python src/testaiapps/manage.py runserver 0.0.0.0:8000
+    command: python src/testaiapps/manage.py runserver 127.0.0.1:8000
     ports:
       - 8000:8000
