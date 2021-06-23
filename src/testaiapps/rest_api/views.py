@@ -127,6 +127,16 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
     queryset = TestSuites.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
+        """
+        Merge is done jsut to merge two test cases and suplly with
+        json restful.
+        response is combined title and single json with two test cases.
+
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
         print(self.request.data)
         get_pk = self.kwargs['pk']
 
@@ -137,8 +147,6 @@ class MergeTwoCasesView(viewsets.ModelViewSet):
 
         testcase1 = get_object_or_404(TestCase, slug=slug1)
         testcase2 = get_object_or_404(TestCase, slug=slug2)
-
-
         test_suite_qs = TestSuites.objects.filter(pk=get_pk)
         if test_suite_qs.exists():
             testsuite = test_suite_qs[0]
